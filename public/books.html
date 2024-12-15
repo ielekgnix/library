@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon.png">
+    <title>Manage Books</title>
+    <link rel="stylesheet" href="authors_books.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Section -->
+        <div class="header">
+            <h1>Manage Books</h1>
+        </div>
+
+        <!-- Add/Edit Book Form -->
+        <div class="form-container">
+            <h2>Add/Edit Book</h2>
+            <form id="book-form">
+                <input type="hidden" id="book-id" value=""> <!-- Hidden input for book ID -->
+                <label for="book-title">Title:</label>
+                <input type="text" id="book-title" required>
+                <label for="book-author">Author ID:</label>
+                <input type="text" id="book-author" required>
+                <button type="button" id="save-book">Save Book</button>
+            </form>
+            <div id="form-message"></div>
+        </div>
+
+        <!-- Display Books Button -->
+        <div>
+            <button id="display-books" onclick="fetchBooks()">Display Books</button>
+        </div>
+
+        <!-- Books List -->
+        <div class="list-container">
+            <h2>Books</h2>
+            <table id="books-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Edit</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody id="books-body">
+                    <!-- Books will be dynamically populated here -->
+                </tbody>
+            </table>
+            <div id="list-message"></div>
+        </div>
+
+        <!-- Logout Button -->
+        <div class="footer">
+            <button onclick="logout()">Logout</button>
+            <a href="dashboard.html" class="button">Back</a>
+        </div>
+    </div>
+
+    <script>
+        // Check for authentication token
+        const token = getCookie('authToken');
+        if (!token) {
+            alert("Please login first!");
+            window.location.href = 'index.html'; // Redirect to login page
+        }
+
+        // Get the cookie value by name
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        // Set the new token in cookies
+        function setToken(newToken) {
+            document.cookie = `authToken=${newToken}; path=/;`;
+        }
+
+        // Fetch and display all books
+        async function fetchBooks() {
+            const token = getCookie('authToken');
+            if (!token) {
+                alert("No valid token found. Please log in again.");
+                window.location.href = 'index.html'; // Redirect to login if no token
+                return;
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1/library/public/getbooks', {
+                    method: 'GET', // Use GET method for fetching books
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        Authorization: `Bearer ${token}` 
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    updateBooksTable(result.data); // Update table with books data
+                    if (result.token) {
+                        setToken(result.token); // Update the token in cookies
+                    }
+                } else {
+                    document.getElementById('list-message').innerText = result.message || 'Failed to fetch books.';
+                }
+            } catch (error) {
+                console.error('Error fetching books:', error);
+            }
+        }
+
+        // Update the books table with data
+        function updateBooksTable(books) {
+            const tableBody = document.getElementById('books-body');
+            tableBody.innerHTML = '';
+            books.forEach(book => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${book.id}</td>
+                    <td>${book.title}</td>
+                    <td>${book.author_id}</td>
+                    <td><button onclick="editBook(${book.id}, '${book.title}', '${book.author_id}')">Edit</button></td>
+                    <td><button onclick="deleteBook(${book.id})">Delete</button></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Add or Edit a book
+        document.getElementById('save-book').addEventListener('click', async () => {
+            const bookId = document.getElementById('book-id').value;
+            const bookTitle = document.getElementById('book-title').value;
+            const bookAuthor = document.getElementById('book-author').value;
+
+            if (!bookTitle || !bookAuthor) {
+                document.getElementById('form-message').innerText = "Please fill in the book title and author.";
+                return;
+            }
+
+            const token = getCookie('authToken');
+            if (!token) {
+                alert("No valid token found. Please log in again.");
+                window.location.href = 'index.html'; // Redirect to login if no token
+                return;
+            }
+
+            try {
+                const endpoint = bookId ? `http://127.0.0.1/library/public/updatebooks/${bookId}` : 'http://127.0.0.1/library/public/addbooks';
+                const method = bookId ? 'PUT' : 'POST';
+                const response = await fetch(endpoint, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ title: bookTitle, author_id: bookAuthor })
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    alert("Book saved successfully!");
+                    document.getElementById('book-id').value = '';
+                    document.getElementById('book-title').value = '';
+                    document.getElementById('book-author').value = '';
+                    fetchBooks(); // Refresh books list
+
+                    // Update token if a new one is returned
+                    if (result.token) {
+                        setToken(result.token); // Update the token in cookies
+                    }
+                } else {
+                    document.getElementById('form-message').innerText = result.message || 'Error saving book. Please try again.';
+                }
+            } catch (error) {
+                console.error('Error saving book:', error);
+            }
+        });
+
+        // Populate the form with book data for editing
+        function editBook(id, title, author_id) {
+            document.getElementById('book-id').value = id;
+            document.getElementById('book-title').value = title;
+            document.getElementById('book-author').value = author_id;
+        }
+
+        // Delete a book
+        async function deleteBook(id) {
+            if (!confirm("Are you sure you want to delete this book?")) return;
+
+            const token = getCookie('authToken');
+            if (!token) {
+                alert("No valid token found. Please log in again.");
+                window.location.href = 'index.html'; // Redirect to login if no token
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://127.0.0.1/library/public/deletebooks/${id}`, {
+                    method: 'DELETE', // Use DELETE method
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    alert("Book deleted successfully!");
+                    fetchBooks(); // Refresh books list
+
+                    // Update token if a new one is returned
+                    if (result.token) {
+                        setToken(result.token); // Update the token in cookies
+                    }
+                } else {
+                    document.getElementById('list-message').innerText = result.message || 'Failed to delete book.';
+                }
+            } catch (error) {
+                console.error('Error deleting book:', error);
+            }
+        }
+
+        // Logout function
+        function logout() {
+            document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
+            window.location.href = 'signin.html'; // Redirect to login page
+        }
+    </script>
+</body>
+</html>

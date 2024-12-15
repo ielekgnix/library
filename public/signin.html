@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="icon.png">
+    <title>Library - Sign In</title>
+</head>
+<body>
+    <div class="left-section">
+        <div class="form-container">
+            <h1>Sign In</h1>
+            <span>or use your name and password</span>
+            <form onsubmit="loginUser(event)">
+                <input type="text" id="uname" placeholder="Username" required>
+                <input type="password" id="pass" placeholder="Password" required>
+                <a href="#">Forgot Your Password?</a>
+                <button type="submit">Sign In</button>
+                <p>Don't have an account? <a href="signup.html">Create one</a>.</p>
+            </form>
+        </div>
+    </div>
+    <div class="right-section">
+        <img src="book.gif" alt="Library Image">
+        <p>“A library is not a luxury but one of the necessities of life.” — Henry Ward Beecher</p>
+    </div>
+
+    <script>
+        const baseUrl = "http://127.0.0.1/library/public";
+        let authToken = null;
+
+        async function sendRequest(endpoint, method, body = null) {
+            const headers = { "Content-Type": "application/json" };
+            const options = { method, headers };
+            if (body) options.body = JSON.stringify(body);
+
+            try {
+                const response = await fetch(`${baseUrl}/${endpoint}`, options);
+                return await response.json();
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred.");
+            }
+        }
+
+        async function loginUser(event) {
+            event.preventDefault();
+            const username = document.getElementById("uname").value;
+            const password = document.getElementById("pass").value;
+            const result = await sendRequest("user/auth", "POST", { username, password });
+
+            if (result && result.token) {
+                document.cookie = `authToken=${result.token}; path=/; secure; samesite=strict`;
+                window.location.href = 'dashboard.html'; // Redirect to dashboard
+            } else {
+                alert("Login failed.");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="icon.png">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-logo">
+            <h1>LIBRARY</h1>
+        </div>
+        <ul class="navbar-links">
+            <li><button onclick="manageAuthors()">Manage Authors</button></li>
+            <li><button onclick="manageBooks()">Manage Books</button></li>
+        </ul>
+        <div class="navbar-logout">
+            <button onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <div class="welcome-container">
+        <h2>Welcome to the Library</h2>
+        <p>Manage authors, books, and more in this platform.</p>
+    </div>
+
+    <script>
+        // Check if the user is authenticated (token exists)
+        const token = getCookie('authToken');
+        if (!token) {
+            alert("Please login first!");
+            window.location.href = 'index.html'; // Redirect to login page
+        }
+
+        // Function to get the value of a cookie by name
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        // Manage Authors
+        function manageAuthors() {
+            window.location.href = 'authors.html'; // Redirect to Manage Authors
+        }
+
+        // Manage Books
+        function manageBooks() {
+            window.location.href = 'books.html'; // Redirect to Manage Books
+        }
+
+        // Handle Logout
+        function logout() {
+            document.cookie = "authToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
+            window.location.href = 'signin.html'; // Redirect to login page
+        }
+    </script>
+</body>
+</html>

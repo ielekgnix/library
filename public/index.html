@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/png" href="icon.png">
+    <title>Library</title>
+</head>
+<body>
+    <div class="container" id="container">
+        <div class="form-container sign-up">
+            <form onsubmit="registerUser(event)">
+                <h1>Create Account</h1>
+                <span>or use your name for registration</span>
+                <input type="text" id="uname" placeholder="Username" required>
+                <input type="password" id="pass" placeholder="Password" required>
+                <button type="submit">Sign Up</button>
+            </form>
+        </div>
+        <div class="form-container sign-in">
+            <form onsubmit="loginUser(event)">
+                <h1>Sign In</h1>
+                <span>or use your name and password</span>
+                <input type="text" id="uname" placeholder="Username" required>
+                <input type="password" id="pass" placeholder="Password" required>
+                <a href="#">Forgot Your Password?</a>
+                <button type="submit">Sign In</button>
+            </form>
+        </div>
+        <div class="toggle-container">
+            <div class="toggle">
+                <div class="toggle-panel toggle-left">
+                    <h1>Hello New Librarian</h1>
+                    <p>Through books, authors keep knowledge alive.</p>
+                    <button class="hidden" id="login">Sign In</button>
+                </div>
+                <div class="toggle-panel toggle-right">
+                    <h1>Hello, Librarian!</h1>
+                    <p>Knowledge shared through authors and books is a light that never dims, illuminating minds across generations</p>
+                    <button class="hidden" id="register">Sign Up</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const baseUrl = "http://127.0.0.1/library/public";
+        let authToken = null;
+
+        async function sendRequest(endpoint, method, body = null, requiresAuth = false) {
+            const headers = { "Content-Type": "application/json" };
+            if (requiresAuth && authToken) {
+                headers["Authorization"] = `Bearer ${authToken}`;
+            }
+
+            const options = { method, headers };
+            if (body) options.body = JSON.stringify(body);
+
+            try {
+                const response = await fetch(`${baseUrl}/${endpoint}`, options);
+                const result = await response.json();
+                return result;
+            } catch (error) {
+                console.error("Error:", error);
+                alert("An error occurred.");
+            }
+        }
+
+        async function registerUser(event) {
+            event.preventDefault();
+            const username = document.getElementById("uname").value;
+            const password = document.getElementById("pass").value;
+            const result = await sendRequest("user/register", "POST", { username, password });
+            alert(result.message || "Registration successful!");
+        }
+
+        async function loginUser(event) {
+            event.preventDefault();
+            const username = document.getElementById("uname").value;
+            const password = document.getElementById("pass").value;
+            const result = await sendRequest("user/auth", "POST", { username, password });
+
+            if (result && result.token) {
+                document.cookie = `authToken=${result.token}; path=/; secure; samesite=strict`;
+                window.location.href = 'dashboard.html'; // Redirect to authors page after login
+            } else {
+                alert("Login failed.");
+            }
+        }
+
+        const container = document.getElementById('container');
+        const registerBtn = document.getElementById('register');
+        const loginBtn = document.getElementById('login');
+
+        registerBtn.addEventListener('click', () => {
+            container.classList.add("active");
+        });
+
+        loginBtn.addEventListener('click', () => {
+            container.classList.remove("active");
+        });
+    </script>
+</body>
+</html>
